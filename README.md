@@ -13,20 +13,22 @@ The bridge is MIT-licensed. Dynobase itself is a paid app with a 7-day free tria
 ## Requirements
 
 - Dynobase 3.0 or later, open, with **Settings → AI → MCP server** turned on
-- Node.js 18 or later
+- Node.js 18 or later. The Claude Desktop extension doesn't need it, because Claude Desktop includes Node.js on macOS and Windows.
 
 ## Setup
 
 Turn on the MCP server in Dynobase, then add the bridge to your client. The bridge reads the port and token from Dynobase's settings, so your client config doesn't need the token.
 
-**Claude Desktop, Windsurf and other clients with an `mcpServers` file**
+**Claude Desktop extension**: download the `.mcpb` file from the [latest release](https://github.com/Dynobase/dynobase-mcp/releases/latest) and open it. Claude Desktop shows an install dialog. Leave the token and URL fields empty.
+
+**Claude Desktop (manual config), Windsurf and other clients with an `mcpServers` file**
 
 ```json
 {
   "mcpServers": {
     "dynobase": {
       "command": "npx",
-      "args": ["-y", "dynobase-mcp"]
+      "args": ["-y", "github:Dynobase/dynobase-mcp"]
     }
   }
 }
@@ -37,13 +39,13 @@ Turn on the MCP server in Dynobase, then add the bridge to your client. The brid
 ```toml
 [mcp_servers.dynobase]
 command = "npx"
-args = ["-y", "dynobase-mcp"]
+args = ["-y", "github:Dynobase/dynobase-mcp"]
 ```
 
 **Claude Code** also works with the bridge:
 
 ```sh
-claude mcp add dynobase -- npx -y dynobase-mcp
+claude mcp add dynobase -- npx -y github:Dynobase/dynobase-mcp
 ```
 
 Claude Code and Cursor can also skip the bridge and connect to Dynobase over HTTP. Dynobase's settings section shows the snippets for that.
@@ -51,7 +53,7 @@ Claude Code and Cursor can also skip the bridge and connect to Dynobase over HTT
 To test the connection from a terminal:
 
 ```sh
-npx -y dynobase-mcp --check
+npx -y github:Dynobase/dynobase-mcp --check
 ```
 
 ## Options
@@ -93,7 +95,7 @@ Each call returns up to about 1 MB of items and times out after 60 seconds. The 
 
 ## Troubleshooting
 
-`npx -y dynobase-mcp --check` reports what it finds. The bridge writes its logs to stderr, which most clients show in their MCP logs.
+`npx -y github:Dynobase/dynobase-mcp --check` reports what it finds. The bridge writes its logs to stderr, which most clients show in their MCP logs.
 
 - **"Can't reach Dynobase"**: open Dynobase and check that **Settings → AI → MCP server** is on. If you changed the port, the bridge reads the new one from the settings, unless you set `--url` or `DYNOBASE_MCP_URL`.
 - **"The MCP server is turned off in Dynobase"**: turn it on in **Settings → AI → MCP server**.

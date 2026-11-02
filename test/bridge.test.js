@@ -160,6 +160,20 @@ describe("options", () => {
     assert.equal(fromFlags.tokenSource, "--token");
   });
 
+  test("ignores empty values and unexpanded placeholders in the environment", () => {
+    const dir = settingsFolder({ enabled: true, port: 50126, token: TOKEN });
+    for (const value of ["", "${user_config.token}"]) {
+      const options = resolveOptions([], {
+        DYNOBASE_DATA_DIR: dir,
+        DYNOBASE_MCP_URL: value.replace("token", "url"),
+        DYNOBASE_MCP_TOKEN: value,
+      });
+      assert.equal(options.url, "http://127.0.0.1:50126/mcp");
+      assert.equal(options.token, TOKEN);
+      assert.equal(options.tokenSource, "settings");
+    }
+  });
+
   test("uses the default port when there are no settings", () => {
     const dir = mkdtempSync(join(tmpdir(), "dynobase-mcp-test-"));
     folders.push(dir);

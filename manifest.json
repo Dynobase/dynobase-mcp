@@ -1,0 +1,74 @@
+{
+  "manifest_version": "0.4",
+  "name": "dynobase",
+  "display_name": "Dynobase",
+  "version": "1.0.0",
+  "description": "Query DynamoDB from Claude through the Dynobase desktop app. Read-only unless you allow writes.",
+  "long_description": "Connects Claude Desktop to the MCP server built into Dynobase 3.0 and later, the desktop client for Amazon DynamoDB. Claude can list your tables, read their schemas and run queries, scans and PartiQL SELECTs through the AWS profiles Dynobase has loaded. Your AWS credentials stay in Dynobase. Write tools only work after you turn on Allow writes in Dynobase.\n\nRequires Dynobase, open, with Settings → AI → MCP server turned on. The extension reads the port and token from Dynobase's settings, so you don't need to enter them. Dynobase is a paid app with a 7-day free trial.",
+  "author": {
+    "name": "Dynobase",
+    "email": "support@dynobase.dev",
+    "url": "https://dynobase.dev"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Dynobase/dynobase-mcp"
+  },
+  "homepage": "https://dynobase.dev/dynamodb-mcp-server/",
+  "documentation": "https://github.com/Dynobase/dynobase-mcp#readme",
+  "support": "https://github.com/Dynobase/dynobase-mcp/issues",
+  "icon": "icon.png",
+  "server": {
+    "type": "node",
+    "entry_point": "bin/dynobase-mcp.js",
+    "mcp_config": {
+      "command": "node",
+      "args": ["${__dirname}/bin/dynobase-mcp.js"],
+      "env": {
+        "DYNOBASE_MCP_TOKEN": "${user_config.token}",
+        "DYNOBASE_MCP_URL": "${user_config.url}"
+      }
+    }
+  },
+  "user_config": {
+    "token": {
+      "type": "string",
+      "title": "Token (optional)",
+      "description": "Leave empty to use the token saved in Dynobase's settings. Otherwise copy it from Dynobase → Settings → AI → MCP server.",
+      "sensitive": true,
+      "required": false,
+      "default": ""
+    },
+    "url": {
+      "type": "string",
+      "title": "MCP URL (optional)",
+      "description": "Leave empty to use the port saved in Dynobase's settings (http://127.0.0.1:41961/mcp unless you changed it).",
+      "required": false,
+      "default": ""
+    }
+  },
+  "tools": [
+    { "name": "list_profiles", "description": "Lists loaded profiles with their regions and table names" },
+    { "name": "list_tables", "description": "Lists the table names of one profile" },
+    { "name": "describe_table", "description": "Returns the full DescribeTable output plus TTL" },
+    { "name": "scan", "description": "Returns one page of a Scan" },
+    { "name": "query", "description": "Returns one page of a Query" },
+    { "name": "get_item", "description": "Returns one item by primary key" },
+    { "name": "partiql", "description": "Runs one PartiQL statement, SELECT only unless writes are allowed" },
+    { "name": "explain_query", "description": "Says which index a key condition would use, and whether it's a Query or a Scan" },
+    { "name": "put_item", "description": "Writes an item (only when Allow writes is on)" },
+    { "name": "update_item", "description": "Updates an item (only when Allow writes is on)" },
+    { "name": "delete_item", "description": "Deletes an item (only when Allow writes is on)" },
+    { "name": "batch_write", "description": "Writes or deletes up to 25 items (only when Allow writes is on)" }
+  ],
+  "tools_generated": true,
+  "keywords": ["dynamodb", "aws", "database", "nosql", "partiql", "dynobase"],
+  "license": "MIT",
+  "privacy_policies": ["https://dynobase.dev/privacy/"],
+  "compatibility": {
+    "platforms": ["darwin", "win32", "linux"],
+    "runtimes": {
+      "node": ">=18.0.0"
+    }
+  }
+}

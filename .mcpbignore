@@ -1,0 +1,8 @@
+.github/
+test/
+server.json
+glama.json
+.gitignore
+.mcpbignore
+*.mcpb
+*.tgz

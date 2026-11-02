@@ -1,7 +1,9 @@
 name: Publish
 
-# Push a tag like v1.0.1 after bumping the version in package.json and
-# server.json. npm is skipped when that version is already published.
+# Bump the version in package.json, manifest.json and server.json, then push a
+# tag like v1.0.1. This publishes to npm (skipped if that version is already
+# there), attaches the Claude Desktop bundle (.mcpb) to the GitHub release, and
+# publishes to the MCP Registry with whichever packages exist.
 on:
   push:
     tags: ["v*"]
@@ -11,10 +13,11 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write # create the GitHub release
       id-token: write # MCP Registry login, and npm trusted publishing if configured
     env:
       MCP_PUBLISHER_VERSION: v1.8.7
+      MCPB_VERSION: 2.1.2
     steps:
       - uses: actions/checkout@v5
 
@@ -27,26 +30,72 @@ jobs:
         run: npm test
 
       - name: Check that the versions match
+        id: version
         run: |
           set -euo pipefail
-          version="$(node -p 'require("./package.json").version')"
+          version="$(jq -r .version package.json)"
+          test "$(jq -r .version manifest.json)" = "$version"
           test "$(jq -r .version server.json)" = "$version"
-          test "$(jq -r '.packages[0].version' server.json)" = "$version"
-          test "$(node -p 'require("./package.json").mcpName')" = "$(jq -r .name server.json)"
+          test "$(jq -r '.packages[] | select(.registryType == "npm") | .version' server.json)" = "$version"
+          test "$(jq -r .mcpName package.json)" = "$(jq -r .name server.json)"
           if [ "$GITHUB_REF_TYPE" = "tag" ]; then test "$GITHUB_REF_NAME" = "v$version"; fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
 
       - name: Publish to npm
-        run: |
-          set -euo pipefail
-          name="$(node -p 'require("./package.json").name')"
-          version="$(node -p 'require("./package.json").version')"
-          if [ -n "$(npm view "$name@$version" version 2>/dev/null || true)" ]; then
-            echo "$name@$version is already on npm"
-          else
-            npm publish --provenance --access public
-          fi
+        id: npm
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          set -uo pipefail
+          name="$(jq -r .name package.json)"
+          if [ -n "$(npm view "$name@$VERSION" version 2>/dev/null)" ]; then
+            echo "$name@$VERSION is already on npm"
+            echo "published=true" >> "$GITHUB_OUTPUT"
+          elif npm publish --provenance --access public; then
+            echo "published=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::warning::npm publish failed. Add an NPM_TOKEN secret or set up npm trusted publishing. The registry entry lists the .mcpb bundle only."
+            echo "published=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Pack the Claude Desktop bundle and attach it to the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          set -euo pipefail
+          tag="v$VERSION"
+          file="dynobase-$VERSION.mcpb"
+          # A bundle already attached to this release keeps its hash.
+          if gh release view "$tag" --json assets --jq '.assets[].name' 2>/dev/null | grep -qx "$file"; then
+            gh release download "$tag" --pattern "$file"
+            echo "Using the $file already attached to $tag"
+          else
+            npx --yes "@anthropic-ai/mcpb@$MCPB_VERSION" pack . "$file"
+            if gh release view "$tag" >/dev/null 2>&1; then
+              gh release upload "$tag" "$file"
+            else
+              gh release create "$tag" "$file" --target "$GITHUB_SHA" --title "$tag" \
+                --notes "Claude Desktop: download $file and open it. Other clients: see the README."
+            fi
+          fi
+
+      - name: Write the server.json to publish
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+          ON_NPM: ${{ steps.npm.outputs.published }}
+        run: |
+          set -euo pipefail
+          file="dynobase-$VERSION.mcpb"
+          sha="$(sha256sum "$file" | cut -d' ' -f1)"
+          url="https://github.com/$GITHUB_REPOSITORY/releases/download/v$VERSION/$file"
+          jq --arg url "$url" --arg sha "$sha" --argjson npm "$ON_NPM" '
+            .packages = (
+              (if $npm then [.packages[] | select(.registryType == "npm")] else [] end)
+              + [{registryType: "mcpb", identifier: $url, fileSha256: $sha, transport: {type: "stdio"}}]
+            )' server.json > server.publish.json
+          cat server.publish.json
 
       - name: Install cosign
         uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
@@ -68,5 +117,12 @@ jobs:
 
       - name: Publish to the MCP Registry
         run: |
+          set -euo pipefail
           ./mcp-publisher login github-oidc
-          ./mcp-publisher publish
+          # A just-published npm version can take a moment to be visible.
+          for attempt in 1 2 3; do
+            if ./mcp-publisher publish server.publish.json; then exit 0; fi
+            echo "Publish attempt $attempt failed; retrying in 20 s"
+            sleep 20
+          done
+          exit 1
