@@ -1,0 +1,42 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.Dynobase/dynobase-mcp",
+  "title": "Dynobase",
+  "description": "Query DynamoDB from AI tools through the Dynobase desktop app. Read-only unless you allow writes.",
+  "version": "1.0.0",
+  "websiteUrl": "https://dynobase.dev/dynamodb-mcp-server/",
+  "repository": {
+    "url": "https://github.com/Dynobase/dynobase-mcp",
+    "source": "github"
+  },
+  "icons": [
+    {
+      "src": "https://dynobase.dev/icons/icon-512x512.png",
+      "mimeType": "image/png",
+      "sizes": ["512x512"]
+    }
+  ],
+  "packages": [
+    {
+      "registryType": "npm",
+      "identifier": "dynobase-mcp",
+      "version": "1.0.0",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "name": "DYNOBASE_MCP_TOKEN",
+          "description": "Bearer token from Dynobase → Settings → AI → MCP server. Optional: read from Dynobase's settings when unset.",
+          "isRequired": false,
+          "isSecret": true
+        },
+        {
+          "name": "DYNOBASE_MCP_URL",
+          "description": "MCP endpoint. Optional: defaults to http://127.0.0.1:<port>/mcp with the port saved in Dynobase.",
+          "isRequired": false
+        }
+      ]
+    }
+  ]
+}

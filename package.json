@@ -1,0 +1,42 @@
+{
+  "name": "dynobase-mcp",
+  "version": "1.0.0",
+  "description": "stdio bridge to the MCP server built into Dynobase, the DynamoDB desktop client, for AI tools that only launch stdio servers",
+  "mcpName": "io.github.Dynobase/dynobase-mcp",
+  "type": "module",
+  "bin": {
+    "dynobase-mcp": "bin/dynobase-mcp.js"
+  },
+  "exports": "./lib/bridge.js",
+  "files": [
+    "bin",
+    "lib"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "test": "node --test test/bridge.test.js"
+  },
+  "keywords": [
+    "mcp",
+    "mcp-server",
+    "model-context-protocol",
+    "dynamodb",
+    "aws",
+    "dynobase",
+    "claude",
+    "codex",
+    "cursor"
+  ],
+  "homepage": "https://dynobase.dev/dynamodb-mcp-server/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Dynobase/dynobase-mcp.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Dynobase/dynobase-mcp/issues"
+  },
+  "author": "Dynobase <support@dynobase.dev>",
+  "license": "MIT"
+}
